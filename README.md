@@ -1,4 +1,4 @@
-# Docker, Ubuntu, kind, and Nginx setup
+# Docker, Ubuntu, kind, and Linkwise UI setup
 
 The project keeps platform-specific scripts in separate folders and the
 provisioning script used inside Ubuntu in its own shared folder:
@@ -21,6 +21,9 @@ cd .\windows
 .\prerequisite.ps1
 .\install.ps1
 ```
+
+If the PowerShell prompt already ends in `\windows>`, you are already in the
+Windows folder; do not run `cd windows` again.
 
 To remove the containers and images later:
 
@@ -69,17 +72,21 @@ privileges.
 
 The install step creates or starts the `docker-k8s-ubuntu` container from
 `ubuntu:24.04`, mounts the shared `ubuntu/` folder and host Docker socket, then
-runs `ubuntu/ubuntu_setup.sh` inside the container. That script installs curl,
-vim, git, Docker CLI, kind, and other utilities; pulls `kindest/node:v1.34.0`
-and `nginx:stable`; and starts Nginx detached with port mapping `3000:80`.
+runs `ubuntu/ubuntu_setup.sh` inside the container. If an existing Ubuntu
+container was created with an old or missing mount, the installer recreates it
+with the current `ubuntu/` folder. That script installs curl, vim, git, Docker
+CLI, kind, and other utilities; pulls `kindest/node:v1.34.0` and
+`nidznd/linkwise-ui:latest`; and starts the Linkwise UI detached with port
+mapping `5000:80`.
 
-The Ubuntu container remains running after installation. Nginx should be
-available at <http://localhost:3000>. Access to the Docker socket grants
-control over the host Docker daemon, so do not expose the Ubuntu container to
-untrusted users.
+The Ubuntu container remains running after installation. The Linkwise UI should be available at <http://localhost:5000>. Access to the
+Docker socket grants control over the host Docker daemon, so do not expose the
+Ubuntu container to untrusted users.
 
-Cleanup stops and removes the workflow's Ubuntu and Nginx containers and
-removes the Ubuntu, Nginx, and kind node images. It does not uninstall Docker.
+Cleanup stops and removes the workflow's Ubuntu and Linkwise UI containers and
+removes the Ubuntu, Linkwise UI, and kind node images. It also removes the
+previous `docker-k8s-nginx` container and `nginx:stable` image if present. It
+does not uninstall Docker.
 If another container still uses one of those images, Docker will refuse to
 remove it; remove that dependent container and rerun cleanup.
 

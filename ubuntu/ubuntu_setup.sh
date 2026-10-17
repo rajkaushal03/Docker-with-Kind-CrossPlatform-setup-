@@ -2,9 +2,9 @@
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
-NGINX_IMAGE="${NGINX_IMAGE:-nginx:stable}"
 KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-kindest/node:v1.34.0}"
-NGINX_CONTAINER="docker-k8s-nginx"
+LINKWISE_IMAGE="${LINKWISE_IMAGE:-nidznd/linkwise-ui:latest}"
+LINKWISE_CONTAINER="docker-k8s-linkwise-ui"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "This script must run as root inside the Ubuntu container." >&2
@@ -40,20 +40,20 @@ install -o root -g root -m 0755 "$KIND_BINARY" /usr/local/bin/kind
 kind version
 
 docker pull "$KIND_NODE_IMAGE"
-docker pull "$NGINX_IMAGE"
+docker pull "$LINKWISE_IMAGE"
 
-if docker container inspect "$NGINX_CONTAINER" >/dev/null 2>&1; then
-  NGINX_STATE="$(docker inspect --format '{{.State.Running}}' "$NGINX_CONTAINER")"
-  if [[ "$NGINX_STATE" != "true" ]]; then
-    docker start "$NGINX_CONTAINER"
+if docker container inspect "$LINKWISE_CONTAINER" >/dev/null 2>&1; then
+  LINKWISE_STATE="$(docker inspect --format '{{.State.Running}}' "$LINKWISE_CONTAINER")"
+  if [[ "$LINKWISE_STATE" != "true" ]]; then
+    docker start "$LINKWISE_CONTAINER"
   fi
 else
   docker run --detach \
-    --name "$NGINX_CONTAINER" \
+    --name "$LINKWISE_CONTAINER" \
     --restart unless-stopped \
-    --publish 3000:80 \
-    "$NGINX_IMAGE"
+    --publish 5000:80 \
+    "$LINKWISE_IMAGE"
 fi
 
 echo "Ubuntu utilities and kind are ready."
-echo "Nginx is running in detached mode at http://localhost:3000"
+echo "Linkwise UI is running in detached mode at http://localhost:5000"

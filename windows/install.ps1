@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $UbuntuContainer = "docker-k8s-ubuntu"
 $UbuntuImage = "ubuntu:24.04"
 $UbuntuScriptsDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) "ubuntu"
+$UbuntuSetupScript = Join-Path $UbuntuScriptsDirectory "ubuntu_setup.sh"
 
 function Invoke-Docker {
     param(
@@ -69,6 +70,10 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw "Docker CLI was not found. Run .\prerequisite.ps1 first."
 }
 
+if (-not (Test-Path -LiteralPath $UbuntuSetupScript)) {
+    throw "Shared Ubuntu setup script not found at '$UbuntuSetupScript'. Ensure the ubuntu folder is alongside windows and linux-mac."
+}
+
 if (-not (Test-DockerCommand -Arguments @("info"))) {
     throw "Docker daemon is not ready. Run .\prerequisite.ps1 and start Docker Desktop."
 }
@@ -92,6 +97,21 @@ else {
     if ($UbuntuState -ne "true") {
         Invoke-Docker -Arguments @("start", $UbuntuContainer)
     }
+
+    if (-not (Test-DockerCommand -Arguments @(
+                "exec", $UbuntuContainer, "test", "-f", "/opt/docker-k8s-setup/ubuntu_setup.sh"
+            ))) {
+        Write-Warning "Existing Ubuntu container is missing the mounted setup script; recreating it with the current ubuntu folder."
+        Invoke-Docker -Arguments @("rm", "--force", $UbuntuContainer)
+        Invoke-Docker -Arguments @(
+            "run", "--detach",
+            "--name", $UbuntuContainer,
+            "--label", "com.example.docker-k8s-setup=true",
+            "--mount", "type=bind,source=$UbuntuScriptsDirectory,target=/opt/docker-k8s-setup,readonly",
+            "--mount", "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock",
+            $UbuntuImage, "sleep", "infinity"
+        )
+    }
 }
 
 Invoke-Docker -Arguments @(
@@ -100,4 +120,4 @@ Invoke-Docker -Arguments @(
 )
 
 Write-Output "Setup complete. Ubuntu is running in '$UbuntuContainer'."
-Write-Output "Nginx is running at http://localhost:3000"
+Write-Output "Linkwise UI is running at http://localhost:5000"

@@ -4,8 +4,9 @@ if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
 }
 
 $UbuntuContainer = "docker-k8s-ubuntu"
-$NginxContainer = "docker-k8s-nginx"
+$ApplicationContainers = @("docker-k8s-linkwise-ui", "docker-k8s-nginx")
 $Images = @(
+    "nidznd/linkwise-ui:latest",
     "nginx:stable",
     "kindest/node:v1.34.0",
     "ubuntu:24.04"
@@ -36,7 +37,7 @@ if ((Invoke-DockerQuietly -Arguments @("info")) -ne 0) {
     throw "Cannot connect to Docker. Start Docker Desktop/Engine and retry."
 }
 
-foreach ($Container in @($NginxContainer, $UbuntuContainer)) {
+foreach ($Container in @($ApplicationContainers + $UbuntuContainer)) {
     if ((Invoke-DockerQuietly -Arguments @("container", "inspect", $Container)) -eq 0) {
         if ((Invoke-DockerQuietly -Arguments @("rm", "--force", $Container)) -ne 0) {
             throw "Failed to remove container '$Container'."
