@@ -45,7 +45,6 @@ $DockerRunArguments = @(
     "--label", "com.example.docker-k8s-setup=true",
     "--mount", "type=bind,source=$UbuntuScriptsDirectory,target=$UbuntuContainerScriptsPath,readonly",
     "--mount", "type=bind,source=$DockerSocketPath,target=$DockerSocketPath",
-    "--publish", "$($Settings['LINKWISE_HOST_PORT']):$($Settings['LINKWISE_HOST_PORT'])",
     "--publish", "$($Settings['KIND_HTTP_PORT']):$($Settings['KIND_HTTP_PORT'])",
     "--publish", "$($Settings['KIND_HTTPS_PORT']):$($Settings['KIND_HTTPS_PORT'])",
     "--publish", "$($Settings['KIND_API_PORT']):$($Settings['KIND_API_PORT'])",
