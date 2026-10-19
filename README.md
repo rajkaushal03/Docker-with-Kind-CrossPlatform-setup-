@@ -71,7 +71,7 @@ administrator approval or manual startup. Linux users need permission to use
 the Docker daemon. Membership in the `docker` group grants root-equivalent
 privileges.
 
-The install step creates or starts the `docker-k8s-ubuntu` container from
+The install step creates or starts the `ubuntu` container from
 `ubuntu:24.04`, mounts `env-setup/ubuntu/` and the host Docker socket, then
 runs `env-setup/ubuntu/ubuntu_setup.sh` inside the container. If an existing
 Ubuntu container was created with an old or missing mount, the installer
@@ -88,7 +88,7 @@ Ubuntu container to untrusted users.
 
 Cleanup stops and removes the workflow's Ubuntu and Linkwise UI containers and
 removes the Ubuntu, Linkwise UI, and kind node images. It also removes the
-previous `docker-k8s-nginx` container and `nginx:stable` image if present. It
+previous `nginx` container and `nginx:stable` image if present. It
 does not uninstall Docker.
 If another container still uses one of those images, Docker will refuse to
 remove it; remove that dependent container and rerun cleanup.

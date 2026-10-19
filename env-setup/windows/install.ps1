@@ -42,7 +42,7 @@ $UbuntuSetupContainerPath   = "$UbuntuContainerScriptsPath/$UbuntuSetupFileName"
 $DockerRunArguments = @(
     "run", "--detach",
     "--name", $UbuntuContainer,
-    "--label", "com.example.docker-k8s-setup=true",
+    "--label", "com.example.setup=true",
     "--mount", "type=bind,source=$UbuntuScriptsDirectory,target=$UbuntuContainerScriptsPath,readonly",
     "--mount", "type=bind,source=$DockerSocketPath,target=$DockerSocketPath",
     "--publish", "$($Settings['KIND_HTTP_PORT']):$($Settings['KIND_HTTP_PORT'])",
@@ -149,7 +149,7 @@ else {
 $ContainerSetupCommand = @'
 set -euo pipefail
 setup_dir="$(mktemp -d)"
-trap 'rm -rf "$setup_dir" /tmp/docker-k8s-setup-bootstrap.sh' EXIT
+trap 'rm -rf "$setup_dir" /tmp/setup-bootstrap.sh' EXIT
 cp -R "$UBUNTU_CONTAINER_SCRIPTS_PATH/." "$setup_dir/"
 find "$setup_dir" -type f \( -name '*.sh' -o -name '*.conf' \) -exec sed -i 's/\r$//' {} +
 bash "$setup_dir/$UBUNTU_SETUP_FILE_NAME"
@@ -163,13 +163,13 @@ try {
         [System.Text.UTF8Encoding]::new($false)
     )
 
-    Invoke-Docker -Arguments @("cp", $BootstrapScriptPath, "${UbuntuContainer}:/tmp/docker-k8s-setup-bootstrap.sh")
+    Invoke-Docker -Arguments @("cp", $BootstrapScriptPath, "${UbuntuContainer}:/tmp/setup-bootstrap.sh")
     Invoke-Docker -Arguments @(
         "exec",
         "--env", "UBUNTU_SETUP_FILE_NAME=$UbuntuSetupFileName",
         "--env", "UBUNTU_CONTAINER_SCRIPTS_PATH=$UbuntuContainerScriptsPath",
         $UbuntuContainer,
-        "bash", "/tmp/docker-k8s-setup-bootstrap.sh"
+        "bash", "/tmp/setup-bootstrap.sh"
     )
 }
 finally {

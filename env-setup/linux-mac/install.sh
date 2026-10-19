@@ -43,7 +43,7 @@ docker pull "$UBUNTU_IMAGE"
 if ! docker container inspect "$UBUNTU_CONTAINER" >/dev/null 2>&1; then
   docker run --detach \
     --name "$UBUNTU_CONTAINER" \
-    --label com.example.docker-k8s-setup=true \
+    --label com.example.setup=true \
     --mount "type=bind,source=$UBUNTU_SCRIPTS_DIR,target=$UBUNTU_CONTAINER_SCRIPTS_PATH,readonly" \
     --mount "type=bind,source=$DOCKER_SOCKET_PATH,target=$DOCKER_SOCKET_PATH" \
     --publish 30080:30080 \
@@ -59,7 +59,7 @@ else
     docker rm --force "$UBUNTU_CONTAINER"
     docker run --detach \
       --name "$UBUNTU_CONTAINER" \
-      --label com.example.docker-k8s-setup=true \
+      --label com.example.setup=true \
       --mount "type=bind,source=$UBUNTU_SCRIPTS_DIR,target=$UBUNTU_CONTAINER_SCRIPTS_PATH,readonly" \
       --mount "type=bind,source=$DOCKER_SOCKET_PATH,target=$DOCKER_SOCKET_PATH" \
       "$UBUNTU_IMAGE" sleep infinity
