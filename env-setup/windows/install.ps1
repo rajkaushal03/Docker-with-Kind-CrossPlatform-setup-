@@ -20,20 +20,37 @@ foreach ($Name in @(
         "UBUNTU_SETUP_FILE_NAME",
         "UBUNTU_CONTAINER_SCRIPTS_PATH",
         "DOCKER_SOCKET_PATH",
-        "LINKWISE_HOST_PORT"
+        "LINKWISE_HOST_PORT",
+        "KIND_API_PORT",
+        "KIND_HTTP_PORT",
+        "KIND_HTTPS_PORT"
     )) {
     if (-not $Settings.ContainsKey($Name) -or [string]::IsNullOrWhiteSpace($Settings[$Name])) {
         throw "Required setting '$Name' is missing from '$EnvironmentConfig'."
     }
 }
 
-$UbuntuImage = $Settings["UBUNTU_IMAGE"]
-$UbuntuContainer = $Settings["UBUNTU_CONTAINER_NAME"]
-$UbuntuSetupFileName = $Settings["UBUNTU_SETUP_FILE_NAME"]
+$UbuntuImage                = $Settings["UBUNTU_IMAGE"]
+$UbuntuContainer            = $Settings["UBUNTU_CONTAINER_NAME"]
+$UbuntuSetupFileName        = $Settings["UBUNTU_SETUP_FILE_NAME"]
 $UbuntuContainerScriptsPath = $Settings["UBUNTU_CONTAINER_SCRIPTS_PATH"]
-$DockerSocketPath = $Settings["DOCKER_SOCKET_PATH"]
-$UbuntuSetupScript = Join-Path $UbuntuScriptsDirectory $UbuntuSetupFileName
-$UbuntuSetupContainerPath = "$UbuntuContainerScriptsPath/$UbuntuSetupFileName"
+$DockerSocketPath           = $Settings["DOCKER_SOCKET_PATH"]
+$UbuntuSetupScript          = Join-Path $UbuntuScriptsDirectory $UbuntuSetupFileName
+$UbuntuSetupContainerPath   = "$UbuntuContainerScriptsPath/$UbuntuSetupFileName"
+
+# ── Shared docker run arguments (ports + mounts) ──────────────────────────────
+$DockerRunArguments = @(
+    "run", "--detach",
+    "--name", $UbuntuContainer,
+    "--label", "com.example.docker-k8s-setup=true",
+    "--mount", "type=bind,source=$UbuntuScriptsDirectory,target=$UbuntuContainerScriptsPath,readonly",
+    "--mount", "type=bind,source=$DockerSocketPath,target=$DockerSocketPath",
+    "--publish", "$($Settings['LINKWISE_HOST_PORT']):$($Settings['LINKWISE_HOST_PORT'])",
+    "--publish", "$($Settings['KIND_HTTP_PORT']):$($Settings['KIND_HTTP_PORT'])",
+    "--publish", "$($Settings['KIND_HTTPS_PORT']):$($Settings['KIND_HTTPS_PORT'])",
+    "--publish", "$($Settings['KIND_API_PORT']):$($Settings['KIND_API_PORT'])",
+    $UbuntuImage, "sleep", "infinity"
+)
 
 function Invoke-Docker {
     param(
@@ -111,14 +128,7 @@ if (-not (Test-DockerCommand -Arguments @("info"))) {
 Invoke-Docker -Arguments @("pull", $UbuntuImage)
 
 if (-not (Test-DockerCommand -Arguments @("container", "inspect", $UbuntuContainer))) {
-    Invoke-Docker -Arguments @(
-        "run", "--detach",
-        "--name", $UbuntuContainer,
-        "--label", "com.example.docker-k8s-setup=true",
-        "--mount", "type=bind,source=$UbuntuScriptsDirectory,target=$UbuntuContainerScriptsPath,readonly",
-        "--mount", "type=bind,source=$DockerSocketPath,target=$DockerSocketPath",
-        $UbuntuImage, "sleep", "infinity"
-    )
+    Invoke-Docker -Arguments $DockerRunArguments
 }
 else {
     $UbuntuState = Get-DockerOutput -Arguments @(
@@ -133,14 +143,7 @@ else {
             ))) {
         Write-Warning "Existing Ubuntu container is missing the mounted setup script; recreating it with the current ubuntu folder."
         Invoke-Docker -Arguments @("rm", "--force", $UbuntuContainer)
-        Invoke-Docker -Arguments @(
-            "run", "--detach",
-            "--name", $UbuntuContainer,
-            "--label", "com.example.docker-k8s-setup=true",
-            "--mount", "type=bind,source=$UbuntuScriptsDirectory,target=$UbuntuContainerScriptsPath,readonly",
-            "--mount", "type=bind,source=$DockerSocketPath,target=$DockerSocketPath",
-            $UbuntuImage, "sleep", "infinity"
-        )
+        Invoke-Docker -Arguments $DockerRunArguments
     }
 }
 

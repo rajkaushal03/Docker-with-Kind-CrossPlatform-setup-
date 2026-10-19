@@ -1,0 +1,7 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: linkwise
+  labels:
+    name: linkwise
+    env: dev

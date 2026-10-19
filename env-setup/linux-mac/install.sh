@@ -46,6 +46,8 @@ if ! docker container inspect "$UBUNTU_CONTAINER" >/dev/null 2>&1; then
     --label com.example.docker-k8s-setup=true \
     --mount "type=bind,source=$UBUNTU_SCRIPTS_DIR,target=$UBUNTU_CONTAINER_SCRIPTS_PATH,readonly" \
     --mount "type=bind,source=$DOCKER_SOCKET_PATH,target=$DOCKER_SOCKET_PATH" \
+    --publish 30080:30080 \
+    --publish 30443:30443 \
     "$UBUNTU_IMAGE" sleep infinity
 else
   if [[ "$(docker inspect --format '{{.State.Running}}' "$UBUNTU_CONTAINER")" != "true" ]]; then
