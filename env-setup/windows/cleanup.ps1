@@ -3,13 +3,39 @@ if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
-$UbuntuContainer = "docker-k8s-ubuntu"
-$ApplicationContainers = @("docker-k8s-linkwise-ui", "docker-k8s-nginx")
+$UbuntuDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) "ubuntu"
+$EnvironmentConfig = Join-Path $UbuntuDirectory "configure\env.conf"
+if (-not (Test-Path -LiteralPath $EnvironmentConfig)) {
+    throw "Environment configuration file not found: '$EnvironmentConfig'."
+}
+
+$Settings = @{}
+foreach ($Line in Get-Content -LiteralPath $EnvironmentConfig) {
+    if ($Line -match '^\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$') {
+        $Settings[$Matches[1]] = $Matches[2].Trim('"').Trim("'")
+    }
+}
+
+foreach ($Name in @(
+        "UBUNTU_IMAGE",
+        "UBUNTU_CONTAINER_NAME",
+        "KIND_NODE_VERSION",
+        "LINKWISE_IMAGE_NAME",
+        "LINKWISE_IMAGE_TAG",
+        "LINKWISE_CONTAINER_NAME"
+    )) {
+    if (-not $Settings.ContainsKey($Name) -or [string]::IsNullOrWhiteSpace($Settings[$Name])) {
+        throw "Required setting '$Name' is missing from '$EnvironmentConfig'."
+    }
+}
+
+$UbuntuContainer = $Settings["UBUNTU_CONTAINER_NAME"]
+$ApplicationContainers = @($Settings["LINKWISE_CONTAINER_NAME"])
 $Images = @(
-    "nidznd/linkwise-ui:latest",
+    "$($Settings['LINKWISE_IMAGE_NAME']):$($Settings['LINKWISE_IMAGE_TAG'])",
     "nginx:stable",
-    "kindest/node:v1.34.0",
-    "ubuntu:24.04"
+    "kindest/node:$($Settings['KIND_NODE_VERSION'])",
+    $Settings["UBUNTU_IMAGE"]
 )
 
 function Invoke-DockerQuietly {

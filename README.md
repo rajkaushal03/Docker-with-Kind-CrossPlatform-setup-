@@ -4,9 +4,10 @@ The project keeps platform-specific scripts in separate folders and the
 provisioning script used inside Ubuntu in its own shared folder:
 
 ```text
-ubuntu/       Shared Ubuntu provisioning script
-linux-mac/    Linux and macOS scripts
-windows/      Windows PowerShell scripts
+env-setup/
+├── ubuntu/       Shared Ubuntu setup, configuration, and modules
+├── linux-mac/    Linux and macOS scripts
+└── windows/      Windows PowerShell scripts
 ```
 
 Run the scripts directly from the folder for your operating system. There is
@@ -17,13 +18,13 @@ no root-level launcher.
 Open PowerShell in the project directory and run:
 
 ```powershell
-cd .\windows
+cd .\env-setup\windows
 .\prerequisite.ps1
 .\install.ps1
 ```
 
-If the PowerShell prompt already ends in `\windows>`, you are already in the
-Windows folder; do not run `cd windows` again.
+If the PowerShell prompt already ends in `\env-setup\windows>`, you are
+already in the Windows folder; do not run `cd windows` again.
 
 To remove the containers and images later:
 
@@ -36,7 +37,7 @@ To remove the containers and images later:
 Open a terminal in the project directory and run:
 
 ```sh
-cd linux-mac
+cd env-setup/linux-mac
 ./prerequisite.sh
 ./install.sh
 ```
@@ -55,7 +56,7 @@ If the shell scripts are not executable, run them with `bash`, for example
 Use the same scripts as Linux:
 
 ```sh
-cd linux-mac
+cd env-setup/linux-mac
 ./prerequisite.sh
 ./install.sh
 ```
@@ -71,12 +72,14 @@ the Docker daemon. Membership in the `docker` group grants root-equivalent
 privileges.
 
 The install step creates or starts the `docker-k8s-ubuntu` container from
-`ubuntu:24.04`, mounts the shared `ubuntu/` folder and host Docker socket, then
-runs `ubuntu/ubuntu_setup.sh` inside the container. If an existing Ubuntu
-container was created with an old or missing mount, the installer recreates it
-with the current `ubuntu/` folder. That script installs curl, vim, git, Docker
-CLI, kind, and other utilities; pulls `kindest/node:v1.34.0` and
-`nidznd/linkwise-ui:latest`; and starts the Linkwise UI detached with port
+`ubuntu:24.04`, mounts `env-setup/ubuntu/` and the host Docker socket, then
+runs `env-setup/ubuntu/ubuntu_setup.sh` inside the container. If an existing
+Ubuntu container was created with an old or missing mount, the installer
+recreates it with the current `env-setup/ubuntu/` folder. The setup entry point
+loads `env-setup/ubuntu/configure/env.conf` and directly calls modular scripts
+from `env-setup/ubuntu/scripts/`. Those scripts install curl, vim, git, Docker
+CLI, kind, and other utilities; pull `kindest/node:v1.34.0` and
+`nidznd/linkwise-ui:latest`; and start the Linkwise UI detached with port
 mapping `5000:80`.
 
 The Ubuntu container remains running after installation. The Linkwise UI should be available at <http://localhost:5000>. Access to the
@@ -91,3 +94,14 @@ If another container still uses one of those images, Docker will refuse to
 remove it; remove that dependent container and rerun cleanup.
 
 `system_cleanup` is not included in this iteration.
+
+## Environment configuration
+
+Ubuntu setup defaults are centralized in
+[`env-setup/ubuntu/configure/env.conf`](./env-setup/ubuntu/configure/env.conf).
+Edit that file to change the Ubuntu image/container, kind and Kubernetes node
+versions, Linkwise image/tag/container/ports, or the application build stack
+versions (Node.js, React, Vite, React plugin, and Firebase SDK). The Ubuntu
+setup entry point and host installers load those shared settings. Application
+stack versions document the versions used to build the prebuilt Linkwise UI
+image; they do not install Node.js or rebuild that image.
